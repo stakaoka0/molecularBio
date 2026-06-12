@@ -1,0 +1,185 @@
+#' Perform statistical analysis on qPCR data
+#'
+#' @description
+#' `stats_qPCR_ActD()` analyzes a tsv file produced by analyze_qPCR(). \n
+#' This function implements the method described in this reference. \n
+#' Reference https://www.cell.com/trends/biotechnology/fulltext/S0167-7799(18)30342-1
+#'
+#'@param path_to_qPCR_res path to a tsv file produced by analyze_qPCR_ActD().
+#'@param out_dir_path path to an output directory.
+#'@param controls list of internal controls.
+#'      c("18S", "GAPDH", "RPL13A") (default)
+#'@param file_prefix prefix for files.
+#'@export
+
+stats_qPCR_treatment <- function(path_to_qPCR_res,
+                       out_dir_path,
+                       controls = c("18S", "GAPDH", "RPL13A"),
+                       stats_type = "ttest",
+                       stats_value = "log2_norm_exp",
+                       paired = F,
+                       var.equal = TRUE,
+                       alternative = "two.sided",
+                       stats_group = NULL,
+                       file_prefix = "") {
+
+  if (!stats_type %in% c("ttest", "anova")) {
+    stop("stats_type must be either 'ttest' or 'anova'.")
+  }
+
+
+  if (!stats_value %in% c("log2_norm_exp", "norm_exp")) {
+    stop("stats_value must be either 'log2_norm_exp' or 'norm_exp'.")
+  }
+
+  # Load dependent libraries----------------------------------------------------
+  suppressPackageStartupMessages(require(readr))
+  suppressPackageStartupMessages(require(dplyr))
+  suppressPackageStartupMessages(require(purrr))
+  suppressPackageStartupMessages(require(broom))
+  suppressPackageStartupMessages(require(rstatix))
+
+  # make outdir folder
+
+  dir.create(file.path(out_dir_path),
+             recursive = TRUE,
+             showWarnings = FALSE)
+
+  # Load a qPCR data containing log2 normalized expression values.
+  qpcr_data <- readr::read_tsv(path_to_qPCR_res,
+                               col_types = cols())
+
+  # Define factor for ordering the group label.
+  group_fct <- qpcr_data %>%
+    distinct(Group, Group_order) %>%
+    arrange(Group_order) %>%
+    pull(Group)
+
+  qpcr_data <- qpcr_data %>%
+    dplyr::mutate(Group = factor(Group, level = group_fct))
+
+  genes <- qpcr_data %>%
+    dplyr::filter(!Target %in% controls) %>%
+    dplyr::pull(Target) %>%
+    unique()
+
+  treatment_conc <- qpcr_data %>%
+    pull(treatment_conc) %>%
+    sort() %>%
+    unique()
+
+  merged_stat_test <- NULL
+
+  if (stats_type == "ttest") {
+
+    for (i in genes) {
+
+      cat(paste0("Perform ttest on ",i,".\n"))
+
+      for (j in treatment_conc) {
+
+        df <- qpcr_data %>%
+          dplyr::filter(Target == i & treatment_conc == j)
+
+        if (1 %in% df$n | 0 %in% df$n) {
+
+          cat(paste0("At least one group has just 1 or 0 sample in ",i,".\n"))
+          cat(paste0("Cannot perform ttest on ",i,".\n"))
+
+        } else {
+
+          if (stats_value == "log2_norm_exp"){
+
+            stat_test <- t_test(log2_norm_exp ~ Group,
+                                paired = paired,
+                                var.equal = var.equal,
+                                alternative = alternative,
+                                data = df)
+
+            dummy_test <- t_test(norm_exp ~ Group, data = df) %>%
+              add_y_position() %>%
+              dplyr::select(group1, group2, y.position)
+
+            stat_test <- stat_test %>%
+              left_join(dummy_test, by = c("group1", "group2"))
+
+          } else if (stats_value == "norm_exp") {
+
+            stat_test <- t_test(norm_exp ~ Group,
+                                paired = paired,
+                                var.equal = var.equal,
+                                alternative = alternative,
+                                data = df) %>%
+              add_y_position()
+
+          }
+
+          stat_test <- stat_test %>%
+            dplyr::mutate(Target = i, treatment_conc = j,
+                          .before = group1)
+
+          merged_stat_test <- bind_rows(merged_stat_test, stat_test)
+        }
+
+      }
+
+    }
+
+    cat("Calculation has been done.\n")
+    readr::write_tsv(merged_stat_test,
+                     file = paste0(out_dir_path, "/",
+                                   file_prefix,
+                                   "qPCR_ttest_result.tsv"))
+    cat("The table has been saved.\n")
+
+  } else if (stats_type == "anova") {
+
+    cat("Anova for ActD chase experiments is not implemented.\n")
+
+    # for (i in genes) {
+    #
+    #
+    #   cat(paste0("Perform anova on ",i,".\n"))
+    #
+    #     for (j in time_course) {
+    #
+    #       df <- qpcr_data %>%
+    #         dplyr::filter(Target == i & treatment_conc == j)
+    #
+    #       if (1 %in% df$n | 0 %in% df$n) {
+    #
+    #         cat(paste0("At least one group has just 1 or 0 sample in ",i,".\n"))
+    #         cat(paste0("Cannot perform anova on ",i,".\n"))
+    #
+    #       } else {
+    #
+    #         stat_test <- aov(log2_norm_exp ~ Group, data = df) %>%
+    #           tukey_hsd()
+    #
+    #         dummy_test <- t_test(norm_exp ~ Group, data = df) %>%
+    #           add_y_position() %>%
+    #           dplyr::select(group1, group2, y.position)
+    #
+    #         stat_test <- stat_test %>%
+    #           left_join(dummy_test, by = c("group1", "group2"))
+    #
+    #         stat_test <- stat_test %>% dplyr::mutate(Target = i, treatment_conc = j,
+    #                                                  .before = group1)
+    #
+    #         merged_stat_test <- bind_rows(merged_stat_test, stat_test)
+    #
+    #       }
+    #
+    #      }
+    #
+    # }
+    cat("Calculation has been done.\n")
+    readr::write_tsv(merged_stat_test,
+                     file = paste0(out_dir_path, "/",
+                                   file_prefix,
+                                   "qPCR_anova_tukey_result.tsv"))
+    cat("The table has been saved.\n")
+
+  }
+
+}
