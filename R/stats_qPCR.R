@@ -1,34 +1,45 @@
 #' Perform statistical analysis on qPCR data
 #'
-#' @description
-#' `stats_qPCR()` analyzes a tsv file produced by analyze_qPCR(). \n
-#' This function implements the method described in this reference. \n
-#' Reference https://www.cell.com/trends/biotechnology/fulltext/S0167-7799(18)30342-1
+#' Runs gene-wise pairwise t-tests or one-way ANOVA followed by Tukey tests.
+#' Reference genes are excluded from testing.
 #'
-#'@param path_to_qPCR_res path to a tsv file produced by analyze_qPCR().
-#'@param out_dir_path path to an output directory.
-#'@param controls list of internal controls.
-#'      c("18S", "GAPDH", "RPL13A") (default)
-#'@param file_prefix prefix for files.
-#'@export
+#' @param object A `qpcr_analysis` object returned by [analyze_qPCR()].
+#' @param stats_type Statistical method: `"ttest"` or `"anova"`.
+#' @param stats_value Expression column to test.
+#' @param paired Logical; use paired t-tests.
+#' @param var.equal Logical; assume equal variances for t-tests.
+#' @param alternative Alternative hypothesis for t-tests.
+#' @param out_dir_path Output directory used when `save_results = TRUE`.
+#' @param save_results Logical; save results as `qPCR_stats.tsv`.
+#'
+#' @return The input object with a `stats` component and class `qpcr_stats`.
+#' @export
 
 stats_qPCR <- function(
   object,
   stats_type = c("ttest", "anova"),
-  stats_value = "log2_norm_exp",
-  stats_group = NULL,
+  stats_value = c("log2_norm_exp", "norm_exp"),
   paired = FALSE,
   var.equal = TRUE,
-  alternative = "two.sided",
+  alternative = c("two.sided", "less", "greater"),
   out_dir_path = NULL,
-  save_results = TRUE
+  save_results = FALSE
 ) {
-  stopifnot(
-    inherits(object, "qpcr_analysis")
-  )
-  stats_type <- match.arg(
-    stats_type
-  )
+  if (!inherits(object, "qpcr_analysis")) {
+    cli::cli_abort("{.arg object} must be a `qpcr_analysis` object.")
+  }
+  stats_type <- match.arg(stats_type)
+  stats_value <- match.arg(stats_value)
+  alternative <- match.arg(alternative)
+  if (!is.logical(save_results) || length(save_results) != 1L ||
+      is.na(save_results)) {
+    cli::cli_abort("{.arg save_results} must be `TRUE` or `FALSE`.")
+  }
+  if (save_results && is.null(out_dir_path)) {
+    cli::cli_abort(
+      "{.arg out_dir_path} is required when {.arg save_results} is `TRUE`."
+    )
+  }
   formula <- stats::as.formula(
     paste(stats_value, "~ Group")
   )
@@ -38,19 +49,34 @@ stats_qPCR <- function(
     ) |>
     dplyr::group_split(Target) |>
     purrr::map_dfr(
-      run_gene_statistics,
-      formula = formula,
-      stats_type = stats_type,
-      paired = paired,
-      var.equal = var.equal,
-      alternative = alternative
+      function(df) {
+        gene <- unique(df$Target)
+        tryCatch(
+          run_gene_statistics(
+            df,
+            formula = formula,
+            stats_type = stats_type,
+            paired = paired,
+            var.equal = var.equal,
+            alternative = alternative
+          ),
+          error = function(error) {
+            cli::cli_warn(
+              "Skipping {gene}: {conditionMessage(error)}"
+            )
+            tibble::tibble()
+          }
+        )
+      }
     )
   object$stats <- results
 
-  if (
-    !is.null(out_dir_path)
-  ) {
-
+  if (save_results) {
+    dir.create(
+      out_dir_path,
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
     readr::write_tsv(
       results,
       file.path(
@@ -67,172 +93,3 @@ stats_qPCR <- function(
 
   object
 }
-
-# OLD VERSION
-# stats_qPCR <- function(path_to_qPCR_res,
-#                        out_dir_path,
-#                        controls = c("18S", "GAPDH", "RPL13A"),
-#                        stats_type = "ttest",
-#                        stats_value = "log2_norm_exp",
-#                        paired = F,
-#                        var.equal = TRUE,
-#                        alternative = "two.sided",
-#                        stats_group = NULL,
-#                        file_prefix = "") {
-#
-#   if (!stats_type %in% c("ttest", "anova")) {
-#     stop("stats_type must be either 'ttest' or 'anova'.")
-#   }
-#
-#   if (!stats_value %in% c("log2_norm_exp", "norm_exp")) {
-#     stop("stats_value must be either 'log2_norm_exp' or 'norm_exp'.")
-#   }
-#
-#   # Load dependent libraries----------------------------------------------------
-#   suppressPackageStartupMessages(require(readr))
-#   suppressPackageStartupMessages(require(dplyr))
-#   suppressPackageStartupMessages(require(purrr))
-#   suppressPackageStartupMessages(require(broom))
-#   suppressPackageStartupMessages(require(rstatix))
-#
-#   # make outdir folder
-#
-#   dir.create(file.path(out_dir_path),
-#              recursive = TRUE,
-#              showWarnings = FALSE)
-#
-#   # Load a qPCR data containing log2 normalized expression values.
-#   qpcr_data <- readr::read_tsv(path_to_qPCR_res,
-#                                col_types = cols())
-#
-#   # Define factor for ordering the group label.
-#   group_fct <- qpcr_data %>%
-#     distinct(Group, Group_order) %>%
-#     arrange(Group_order) %>%
-#     pull(Group)
-#
-#   qpcr_data <- qpcr_data %>%
-#     dplyr::mutate(Group = factor(Group, level = group_fct))
-#
-#   genes <- qpcr_data %>%
-#     dplyr::filter(!Target %in% controls) %>%
-#     dplyr::pull(Target) %>%
-#     unique()
-#
-#   merged_stat_test <- NULL
-#
-#   if (stats_type == "ttest") {
-#
-#     for (i in genes) {
-#
-#       cat(paste0("Perform ttest on ",i,".\n"))
-#
-#       df <- qpcr_data %>%
-#         dplyr::filter(Target == i)
-#
-#       if (1 %in% df$n | 0 %in% df$n) {
-#
-#         cat(paste0("At least one group has just 1 or 0 sample in ",i,".\n"))
-#         cat(paste0("Cannot perform ttest on ",i,".\n"))
-#
-#       } else {
-#
-#         if (stats_value == "log2_norm_exp"){
-#           stat_test <- t_test(log2_norm_exp ~ Group,
-#                               paired = paired,
-#                               var.equal = var.equal,
-#                               alternative = alternative,
-#                               data = df)
-#
-#           dummy_test <- t_test(norm_exp ~ Group, data = df) %>%
-#             add_y_position() %>%
-#             dplyr::select(group1,group2,y.position)
-#
-#           stat_test <- stat_test %>%
-#             left_join(dummy_test, by = c("group1", "group2"))
-#
-#         } else if (stats_value == "norm_exp") {
-#
-#           stat_test <- t_test(norm_exp ~ Group,
-#                               paired = paired,
-#                               var.equal = var.equal,
-#                               alternative = alternative,
-#                               data = df) %>%
-#             add_y_position()
-#
-#         }
-#
-#         stat_test <- stat_test %>% dplyr::mutate(Target = i, .before = group1)
-#
-#         merged_stat_test <- bind_rows(merged_stat_test, stat_test) %>%
-#           dplyr::mutate(p.signif = case_when(p > 0.05 ~ "ns",
-#                                              p <= 0.05 & p > 0.01 ~ "*",
-#                                              p <= 0.01 & p > 0.001 ~ "**",
-#                                              p <= 0.001 ~ "***"),
-#                         .before = y.position)
-#       }
-#
-#     }
-#
-#     cat("Calculation has been done.\n")
-#     readr::write_tsv(merged_stat_test,
-#                      file = paste0(out_dir_path, "/",
-#                                    file_prefix,
-#                                    "qPCR_ttest_result.tsv"))
-#     cat("The table has been saved.\n")
-#
-#   } else if (stats_type == "anova") {
-#
-#     for (i in genes) {
-#
-#       cat(paste0("Perform anova on ",i,".\n"))
-#
-#       df <- qpcr_data %>%
-#         dplyr::filter(Target == i)
-#
-#       if (1 %in% df$n | 0 %in% df$n) {
-#
-#         cat(paste0("At least one group has just 1 or 0 sample in ",i,".\n"))
-#         cat(paste0("Cannot perform anova on ",i,".\n"))
-#
-#       } else {
-#
-#         if (stats_value == "log2_norm_exp") {
-#           stat_test <- aov(log2_norm_exp ~ Group, data = df) %>%
-#             tukey_hsd()
-#
-#           dummy_test <- t_test(norm_exp ~ Group, data = df) %>%
-#             add_y_position() %>%
-#             dplyr::select(group1,group2,y.position)
-#
-#           stat_test <- stat_test %>%
-#             left_join(dummy_test, by = c("group1", "group2"))
-#         } else if (stats_value == "norm_exp") {
-#           stat_test <- aov(norm_exp ~ Group, data = df) %>%
-#             tukey_hsd()
-#
-#           dummy_test <- t_test(norm_exp ~ Group, data = df) %>%
-#             add_y_position() %>%
-#             dplyr::select(group1,group2,y.position)
-#
-#           stat_test <- stat_test %>%
-#             left_join(dummy_test, by = c("group1", "group2"))
-#
-#         }
-#
-#         stat_test <- stat_test %>% dplyr::mutate(Target = i, .before = group1)
-#
-#         merged_stat_test <- bind_rows(merged_stat_test, stat_test)
-#
-#       }
-#     }
-#     cat("Calculation has been done.\n")
-#     readr::write_tsv(merged_stat_test,
-#                      file = paste0(out_dir_path, "/",
-#                                    file_prefix,
-#                                    "qPCR_anova_tukey_result.tsv"))
-#     cat("The table has been saved.\n")
-#
-#   }
-#
-# }

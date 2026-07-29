@@ -92,6 +92,7 @@ validate_palette <- function(
   if (
     is.character(palette) &&
     length(palette) == 1 &&
+    (is.null(names(palette)) || !nzchar(names(palette))) &&
     !palette %in% allowed
   ) {
     stop(

@@ -1,19 +1,30 @@
-#' Analyze qPCR data
+#' Plot qPCR results
 #'
-#' @description
-#' `plot_qPCR()` analyzes a tsv file produced by analyze_qPCR().
+#' Creates an overview plot, individual target plots, or both. Statistical
+#' annotations are added when `object` was processed by [stats_qPCR()].
 #'
+#' @param object A `qpcr_analysis` or `qpcr_stats` object.
+#' @param palette A supported palette name or a character vector of colors.
+#' @param plot_all Logical; create the overview plot.
+#' @param plot_individual Logical; create one plot per target.
+#' @param plot_internal_controls Logical; include reference genes.
+#' @param show_n Logical; show sample size on individual plots.
+#' @param show_controls Logical; list reference genes in the y-axis label.
+#' @param jitter Logical; horizontally jitter sample points on individual plots.
+#' @param jitter_width Non-negative numeric jitter width.
+#' @param jitter_seed Integer seed used to make jitter positions reproducible.
+#' @param comparison Statistical comparisons to show.
+#' @param stats_group List of two-element character vectors used when
+#'   `comparison = "custom"`.
+#' @param hide_ns Logical; hide nonsignificant comparisons.
+#' @param stats_display Display significance as `"star"` or `"value"`.
+#' @param out_dir_path Directory for saved plots.
+#' @param width,height Plot dimensions in inches.
+#' @param dpi Raster resolution.
+#' @param save_tiff,save_svg Logical; save plots in the corresponding format.
 #'
-#'@param path_to_qPCR_res path to a tsv file produced by analyze_qPCR().
-#'@param path_to_stats_res path to a tsv file produced by stats_qPCR().
-#'@param out_dir_path path to an output directory.
-#'@param controls list of internal controls.
-#'      c("18S", "GAPDH", "RPL13A") (default)
-#'@param plot_all,plot_internal_controls,plot_individual,save_final_table A boolean.
-#'@param file_prefix prefix for files.
-#'@param dpi dpi for graphs.
-#'@param palette https://nanx.me/ggsci/
-#'@export
+#' @return Invisibly, a named list containing the generated plots.
+#' @export
 
 plot_qPCR <- function(
     object,
@@ -25,6 +36,9 @@ plot_qPCR <- function(
 
     show_n = TRUE,
     show_controls = TRUE,
+    jitter = TRUE,
+    jitter_width = 0.1,
+    jitter_seed = 1L,
     comparison = c(
       "all",
       "control",
@@ -40,51 +54,85 @@ plot_qPCR <- function(
     height = 4,
     dpi = 300,
 
-    save_tiff = TRUE,
-    save_svg = TRUE
+    save_tiff = FALSE,
+    save_svg = FALSE
 
 ) {
-  stopifnot(
-    inherits(object, "qpcr_analysis")
-  )
-
-  plot_data <- object$data %>%
-    dplyr::mutate(
-      Group = factor(
-        Group,
-        levels = object$group_levels
-      )
+  if (!inherits(object, "qpcr_analysis")) {
+    cli::cli_abort("{.arg object} must be a `qpcr_analysis` object.")
+  }
+  if (!is.logical(jitter) || length(jitter) != 1L || is.na(jitter)) {
+    cli::cli_abort("{.arg jitter} must be `TRUE` or `FALSE`.")
+  }
+  if (!is.numeric(jitter_width) || length(jitter_width) != 1L ||
+      is.na(jitter_width) || jitter_width < 0) {
+    cli::cli_abort(
+      "{.arg jitter_width} must be one non-negative number."
     )
+  }
+  if (!is.numeric(jitter_seed) || length(jitter_seed) != 1L ||
+      is.na(jitter_seed) || jitter_seed %% 1 != 0) {
+    cli::cli_abort("{.arg jitter_seed} must be one integer.")
+  }
+  jitter_seed <- as.integer(jitter_seed)
+  comparison <- match.arg(comparison)
+  stats_display <- match.arg(stats_display)
+  validate_palette(palette)
+  if (!is.logical(save_tiff) || length(save_tiff) != 1L ||
+      is.na(save_tiff) ||
+      !is.logical(save_svg) || length(save_svg) != 1L ||
+      is.na(save_svg)) {
+    cli::cli_abort("{.arg save_tiff} and {.arg save_svg} must be logical.")
+  }
+  save_requested <- save_tiff || save_svg
+  if (save_requested && is.null(out_dir_path)) {
+    cli::cli_abort(
+      "{.arg out_dir_path} is required when plot saving is enabled."
+    )
+  }
+  if (comparison == "custom" && is.null(stats_group)) {
+    cli::cli_abort(
+      "{.arg stats_group} is required when {.arg comparison} is `\"custom\"`."
+    )
+  }
 
   group_colors <- resolve_palette(
     palette = palette,
     groups = object$group_levels,
     group_info = object$group_info
   )
+  plots <- list()
 
   if (plot_all) {
     overview_plot <- build_overview_plot(
       object,
-      colors = group_colors
+      colors = group_colors,
+      show_controls = show_controls,
+      include_internal_controls = plot_internal_controls
     )
+    plots$overview <- overview_plot
 
-    save_plot(
-      plot = overview_plot,
-      filename_base = file.path(
-        out_dir_path,
-        "qPCR_plot"
-      ),
-      width = width,
-      height = height,
-      dpi = dpi
-    )
-
+    if (save_requested) {
+      dir.create(out_dir_path, recursive = TRUE, showWarnings = FALSE)
+      save_plot(
+        plot = overview_plot,
+        filename_base = file.path(out_dir_path, "qPCR_plot"),
+        width = width,
+        height = height,
+        dpi = dpi,
+        save_tiff = save_tiff,
+        save_svg = save_svg
+      )
+    }
   }
   if (plot_individual) {
     genes <- unique(
-      object$data$Target
+      object$data$Target[
+        plot_internal_controls |
+          !object$data$Target %in% object$controls
+      ]
     )
-    plots <- purrr::map(
+    individual_plots <- purrr::map(
       genes,
       ~ build_gene_plot(
         object,
@@ -93,6 +141,9 @@ plot_qPCR <- function(
 
         show_n = show_n,
         show_controls = show_controls,
+        jitter = jitter,
+        jitter_width = jitter_width,
+        jitter_seed = jitter_seed,
 
         hide_ns = hide_ns,
         stats_display = stats_display,
@@ -101,18 +152,12 @@ plot_qPCR <- function(
         stats_group = stats_group
       )
     )
-    names(plots) <- genes
-    object$plots <- plots
+    names(individual_plots) <- genes
+    plots$individual <- individual_plots
 
-    if (!is.null(out_dir_path)) {
-      dir.create(
-        out_dir_path,
-        recursive = TRUE,
-        showWarnings = FALSE
-      )
-
+    if (save_requested) {
       purrr::iwalk(
-        plots,
+        individual_plots,
         ~ save_plot(
           plot = .x,
           filename_base = file.path(
@@ -121,376 +166,12 @@ plot_qPCR <- function(
           ),
           width = width,
           height = height,
-          dpi = dpi
+          dpi = dpi,
+          save_tiff = save_tiff,
+          save_svg = save_svg
         )
       )
     }
-
-    return(
-      invisible(plots)
-    )
   }
+  invisible(plots)
 }
-
-# plot_qPCR <- function(path_to_qPCR_res,
-#                       path_to_stats_res,
-#                       out_dir_path,
-#                       controls = c("18S", "GAPDH", "RPL13A"),
-#                       plot_all = TRUE,
-#                       plot_internal_controls = FALSE,
-#                       plot_individual = FALSE,
-#                       file_prefix = "",
-#                       stats_type = "none",
-#                       stats_display = "star",
-#                       show_n_and_norm_genes = TRUE,
-#                       stats_group = NULL,
-#                       hide.ns = TRUE,
-#                       dpi = 150,
-#                       ylim_fold = 1.1,
-#                       width = 1.5,
-#                       height = 4) {
-#
-#   if (!stats_type %in% c("ttest", "anova", "none")) {
-#     stop("stats_type must be either 'ttest' or 'anova'.")
-#   }
-#
-#   if (!stats_display %in% c("star", "value")) {
-#     stop("stats_display must be either 'star' or 'value'.")
-#   }
-#
-#   if (!show_n_and_norm_genes %in% c(TRUE, FALSE)) {
-#     stop("show_n_and_norm_genes must be either 'TRUE' or 'FALSE'.")
-#   }
-#
-#   # Load dependent libraries----------------------------------------------------
-#   suppressPackageStartupMessages(require(readr))
-#   suppressPackageStartupMessages(require(dplyr))
-#   suppressPackageStartupMessages(require(ggplot2))
-#   suppressPackageStartupMessages(require(ggtext))
-#   suppressPackageStartupMessages(require(ggpubr))
-#   suppressPackageStartupMessages(require(rstatix))
-#
-#   # Load and modify data for plotting ------------------------------------------
-#
-#   # make outdir folder
-#
-#   dir.create(file.path(out_dir_path),
-#              recursive = TRUE,
-#              showWarnings = FALSE)
-#
-#   # Load an analyzed qPCR data.
-#   plot_data <- readr::read_tsv(path_to_qPCR_res,
-#                               col_types = cols())
-#
-#   # Define factor for ordering the group label.
-#   group_fct <- plot_data %>%
-#     distinct(Group, Group_order) %>%
-#     arrange(Group_order) %>%
-#     pull(Group)
-#
-#   plot_data <- plot_data %>%
-#     dplyr::mutate(Group = factor(Group, level = group_fct))
-#
-#   color_fct <- plot_data %>%
-#     dplyr::distinct(Group, Group_order, color) %>%
-#     dplyr::arrange(Group) %>%
-#     dplyr::pull(color) %>%
-#     unique()
-#
-#   # Define plot theme
-#   plot_theme_basic <- theme_classic() + theme(
-#     title = element_text(size = 12),
-#     plot.title = element_text(hjust = 0.5),
-#     axis.title.x = element_text(size = 16),
-#     axis.title.y = element_text(size = 16),
-#     axis.text.x = element_text(size = 12),
-#     axis.text.y = element_text(size = 12),
-#     legend.text = element_text(size = 10),
-#     legend.title = element_text(size = 12)
-#   )
-#
-#   # Draw plots------------------------------------------------------------------
-#
-#   if (plot_all == TRUE) {
-#
-#     if (plot_internal_controls == FALSE) {
-#
-#       plot_data <- plot_data %>%
-#         dplyr::filter(!Target %in% controls)
-#
-#     }
-#
-#     g1 <- plot_data %>%
-#       dplyr::mutate(norm_exp = case_when(is.na(norm_exp) ~ -Inf,
-#                                          TRUE ~ norm_exp)) %>%
-#       ggplot(aes(x=Target,
-#                  y=group_exp,
-#                  group=factor(Group, level = group_fct))) +
-#       geom_bar(position = position_dodge(.9),
-#                stat = "identity",
-#                color = "black", linewidth=0.5,
-#                alpha = 0.8,
-#                aes(fill = factor(color, level = color_fct))) +
-#       geom_errorbar(aes(ymax = upper_error, ymin = lower_error),
-#                     width = .2,
-#                     position = position_dodge(.9)) +
-#       geom_jitter(position = position_dodge(.9),
-#                   fill = "black",
-#                   aes(x = Target,
-#                       y = norm_exp,
-#                       group = interaction(Target,factor(Group, level = group_fct)))) +
-#       # geom_dotplot(binaxis = "y",
-#       #              stackdir = "center",
-#       #              #position =  position_dodge(.9),
-#       #              fill = "black",
-#       #              aes(x = Target,
-#       #                  y = norm_exp,
-#       #                  group = interaction(Target,factor(Group, level = group_fct))),
-#       #                  dotsize = 0.1) +
-#       plot_theme_basic +
-#       ylab(paste0("Relative Expression")) +
-#       scale_fill_identity(labels = group_fct, guide = "legend") +
-#       theme(legend.title = element_blank(),
-#             axis.title.y = element_markdown(),
-#             axis.title.x = element_blank())
-#
-#     if (show_n_and_norm_genes == TRUE) {
-#       g1 <- g1 +
-#         ylab(paste0("Relative Expression<br><span style='font-size:10pt'>(Normalized by ",
-#                     paste0(controls, collapse = " "), ")</span>"))
-#     }
-#
-#     n_targets <- plot_data %>%
-#       pull(Target) %>%
-#       unique() %>%
-#       length()
-#
-#     ggsave(plot = g1,
-#            file = paste0(out_dir_path, "/",
-#                          file_prefix,
-#                          "qPCR_plot.tiff"),
-#            width = n_targets*width, height = height, dpi = dpi
-#     )
-#
-#   }
-#
-#   if (plot_individual == TRUE) {
-#
-#     if (plot_internal_controls == FALSE) {
-#
-#       plot_data <- plot_data %>%
-#         dplyr::filter(!Target %in% controls)
-#
-#     }
-#
-#     genes <- plot_data %>%
-#       dplyr::pull(Target) %>%
-#       unique()
-#
-#     if (stats_type %in% c("ttest", "anova")) {
-#
-#       stat_test <- read_tsv(path_to_stats_res, col_types =  cols())
-#
-#       if (!is.null(stats_group)) {
-#
-#         combi <- as.data.frame(stats_group) %>%
-#           t() %>%
-#           as_tibble(test, rownames = NULL)
-#
-#         colnames(combi) <- c("group1", "group2")
-#
-#         df1 <- stat_test %>%
-#           inner_join(combi, by = c("group1", "group2"))
-#
-#         df2 <- stat_test %>%
-#           inner_join(combi, by = c("group1" = "group2",
-#                                    "group2" = "group1")
-#           )
-#
-#         stat_test <- df1 %>%
-#           bind_rows(df2)
-#         # Write code to re-define y.position.
-#       }
-#     }
-#     for (i in genes) {
-#
-#       max_exp <- plot_data %>%
-#         dplyr::filter(Target == i) %>%
-#         pull(norm_exp) %>%
-#         max(na.rm = T)
-#
-#       g1 <- plot_data %>%
-#         dplyr::filter(Target == i) %>%
-#         dplyr::mutate(norm_exp = case_when(is.na(norm_exp) ~ -Inf,
-#                                            TRUE ~ norm_exp)) %>%
-#         ggplot(aes(x = Group,
-#                    y = log2_norm_exp,
-#                    group = factor(Group, level = group_fct))) +
-#         geom_bar(position = "dodge",
-#                  stat = "identity",
-#                  color = "black", linewidth=0.5,
-#                  alpha = 0.8,
-#                  aes(x = Group,
-#                      y = group_exp,
-#                      fill = factor(color, level = color_fct))) +
-#         geom_errorbar(aes(ymax = upper_error, ymin = lower_error),
-#                       width=.2,
-#                       position = position_dodge(.9)) +
-#         geom_jitter(position = position_dodge(.9),
-#                     fill = "black",
-#                     aes(x = Group,
-#                         y = norm_exp,
-#                         group = factor(Group, level = group_fct))) +
-#         # geom_dotplot(binaxis = "y",
-#         #              stackdir = "center",
-#         #              position = position_dodge(.9),
-#         #              fill = "black",
-#         #              binwidth = max_exp/30,
-#         #              dotsize = 0.5,
-#         #            aes(x = Group,
-#         #                y = norm_exp,
-#         #                group = factor(Group, level = group_fct))) +
-#         coord_cartesian(ylim=c(0, max_exp*ylim_fold)) +
-#         ylab(paste0("Relative Expression")) +
-#         xlab(i) +
-#         plot_theme_basic +
-#         scale_fill_identity(labels = group_fct, guide = "legend") +
-#         theme(legend.title = element_blank(),
-#               axis.title.y = element_markdown(),
-#               axis.text.x = element_blank())
-#
-#       if (stats_type == "ttest") {
-#
-#         stat_test_i <- stat_test %>%
-#           dplyr::filter(Target == i)
-#
-#         if (hide.ns == TRUE &
-#             TRUE %in% (0.05 > stat_test_i$p)) {
-#
-#           stat_test_i <- stat_test_i %>%
-#             dplyr::filter(p <= 0.05)
-#
-#           max_exp <- stat_test_i %>%
-#             pull(y.position) %>%
-#             max()
-#
-#           if (stats_display == "value") {
-#             g1 <- g1 + stat_pvalue_manual(
-#               stat_test_i,
-#               label = "p = {p}",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           } else if (stats_display == "star") {
-#             g1 <- g1 + stat_pvalue_manual(
-#               stat_test_i,
-#               label = "p.signif",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           }
-#
-#         } else if (hide.ns == FALSE) {
-#
-#           max_exp <- stat_test_i %>%
-#             pull(y.position) %>%
-#             max()
-#
-#           if (stats_display == "value") {
-#             g1 <- g1 + stat_pvalue_manual(
-#               stat_test_i,
-#               label = "p = {p}",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           } else if (stats_display == "star") {
-#             g1 <- g1 + stat_pvalue_manual(
-#               stat_test_i,
-#               label = "p.signif",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           }
-#
-#
-#         }
-#       } else if (stats_type == "anova") {
-#
-#         stat_test_i <- stat_test %>%
-#           dplyr::filter(Target == i)
-#
-#         if (hide.ns == TRUE &
-#             TRUE %in% (0.05 > stat_test_i$p.adj)) {
-#
-#           stat_test_i <- stat_test_i %>%
-#             dplyr::filter(p.adj <= 0.05)
-#
-#           max_exp <- stat_test_i %>%
-#             pull(y.position) %>%
-#             max()
-#
-#           if (stats_display == "value") {
-#             g1 <- g1 + stat_compare_means(method = "anova", vjust = -3) +
-#               stat_pvalue_manual(
-#                 stat_test_i, label = "{p.adj}",
-#                 y.position = stat_test_i$y.position,
-#                 hide.ns = FALSE
-#               ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           } else if (stats_display == "star") {
-#             g1 <- g1 + stat_compare_means(method = "anova", vjust = -3) +
-#               stat_pvalue_manual(
-#                 stat_test_i, label = "p.adj.signif",
-#                 y.position = stat_test_i$y.position,
-#                 hide.ns = FALSE
-#               ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#           }
-#
-#
-#         } else if (hide.ns == FALSE) {
-#
-#           max_exp <- stat_test_i %>%
-#             pull(y.position) %>%
-#             max()
-#
-#         if (stats_display == "value") {
-#           g1 <- g1 + stat_compare_means(method = "anova", vjust = -3) +
-#             stat_pvalue_manual(
-#               stat_test_i, label = "{p.adj}",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#         } else if (stats_display == "star") {
-#           g1 <- g1 + stat_compare_means(method = "anova", vjust = -3) +
-#             stat_pvalue_manual(
-#               stat_test_i, label = "p.adj.signif",
-#               y.position = stat_test_i$y.position,
-#               hide.ns = FALSE
-#             ) + coord_cartesian(ylim=c(0, max_exp*ylim_fold))
-#         }
-#
-#
-#         }
-#       }
-#
-#       if (show_n_and_norm_genes == TRUE) {
-#         g1 <- g1 +
-#           ylab(paste0("Relative Expression<br><span style='font-size:10pt'>(Normalized by ",
-#                       paste0(controls, collapse = " "), ")</span>")) +
-#           geom_text(position = position_dodge(width = .9),
-#                     aes(label = paste("n:", n), y = 0), vjust= 1.1)
-#       }
-#
-#       n_group <- plot_data %>%
-#         pull(Group) %>%
-#         unique() %>%
-#         length()
-#       ggsave(plot = g1,
-#              file = paste0(out_dir_path, "/",
-#                            file_prefix,
-#                            i,
-#                            "_qPCR_plot.tiff"),
-#              width = n_group*width, height = height, dpi = dpi
-#       )
-#     }
-#   }
-# }
