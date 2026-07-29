@@ -272,7 +272,8 @@ resolve_palette <- function(
   n_groups <- length(groups)
   if (
     is.character(palette) &&
-    length(palette) == 1
+    length(palette) == 1 &&
+    (is.null(names(palette)) || !nzchar(names(palette)))
   ) {
 
     colors <- switch(
@@ -332,13 +333,55 @@ resolve_palette <- function(
     names(colors) <- groups
     return(colors)
   }
-  if (length(palette) < n_groups) {
-    stop(
-      "Palette contains fewer colors than groups."
+  palette_names <- names(palette)
+  has_names <- !is.null(palette_names) &&
+    any(nzchar(palette_names))
+  if (has_names && any(!nzchar(palette_names))) {
+    cli::cli_abort(
+      "{.arg palette} must be either fully named or completely unnamed."
     )
   }
-  names(palette) <- groups
-  palette
+  if (has_names && anyDuplicated(palette_names)) {
+    duplicated_names <- unique(
+      palette_names[duplicated(palette_names)]
+    )
+    cli::cli_abort(
+      c(
+        "{.arg palette} contains duplicate group names.",
+        "x Duplicated: {.val {duplicated_names}}"
+      )
+    )
+  }
+  if (has_names) {
+    missing_groups <- setdiff(groups, palette_names)
+    if (length(missing_groups) > 0) {
+      cli::cli_abort(
+        c(
+          "{.arg palette} does not define a color for every group.",
+          "x Missing: {.val {missing_groups}}"
+        )
+      )
+    }
+    colors <- palette[groups]
+  } else {
+    if (length(palette) < n_groups) {
+      cli::cli_abort(
+        "{.arg palette} contains fewer colors than groups."
+      )
+    }
+    colors <- palette[seq_len(n_groups)]
+    names(colors) <- groups
+  }
+  tryCatch(
+    grDevices::col2rgb(unname(colors)),
+    error = function(error) {
+      cli::cli_abort(
+        "{.arg palette} contains an invalid R color.",
+        parent = error
+      )
+    }
+  )
+  colors
 }
 
 
@@ -369,32 +412,29 @@ save_plot <- function(
   filename_base,
   width,
   height,
-  dpi
+  dpi,
+  save_tiff = TRUE,
+  save_svg = TRUE
 ) {
 
-  ggplot2::ggsave(
-    filename = paste0(
-      filename_base,
-      ".tiff"
-
-    ),
-    plot = plot,
-    width = width,
-    height = height,
-    dpi = dpi,
-    compression = "lzw"
-
-  )
-
-  ggplot2::ggsave(
-    filename = paste0(
-      filename_base,
-      ".svg"
-    ),
-
-    plot = plot,
-    width = width,
-    height = height
-  )
+  if (save_tiff) {
+    ggplot2::ggsave(
+      filename = paste0(filename_base, ".tiff"),
+      plot = plot,
+      width = width,
+      height = height,
+      dpi = dpi,
+      compression = "lzw"
+    )
+  }
+  if (save_svg) {
+    ggplot2::ggsave(
+      filename = paste0(filename_base, ".svg"),
+      plot = plot,
+      width = width,
+      height = height,
+      device = svglite::svglite
+    )
+  }
 
 }

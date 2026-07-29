@@ -1,3 +1,103 @@
+#' Collapse technical replicates
+#'
+#' @keywords internal
+
+collapse_technical_replicates <- function(
+    raw_data,
+    technical_replicates = c("average", "error"),
+    technical_sd_threshold = 0.2
+) {
+  technical_replicates <- match.arg(technical_replicates)
+
+  prepared_data <- raw_data |>
+    dplyr::transmute(
+      Sample,
+      Target,
+      Cq = suppressWarnings(as.numeric(Cq)),
+      `Amp Status`,
+      valid_cq = dplyr::if_else(
+        `Amp Status` == "Amp",
+        Cq,
+        NA_real_
+      )
+    )
+
+  replicate_counts <- prepared_data |>
+    dplyr::count(
+      Sample,
+      Target,
+      name = "technical_n"
+    )
+  duplicated_pairs <- replicate_counts |>
+    dplyr::filter(technical_n > 1L)
+
+  if (nrow(duplicated_pairs) == 0L) {
+    cli::cli_inform("No technical replicates were provided.")
+  } else if (technical_replicates == "error") {
+    cli::cli_abort(
+      c(
+        "Technical replicates were detected.",
+        "x Repeated Sample/Target pairs: {nrow(duplicated_pairs)}"
+      )
+    )
+  } else {
+    cli::cli_inform(
+      "Averaging technical replicates for {nrow(duplicated_pairs)} Sample/Target pair{?s}."
+    )
+  }
+
+  collapsed_data <- prepared_data |>
+    dplyr::group_by(
+      Sample,
+      Target
+    ) |>
+    dplyr::summarise(
+      technical_n = dplyr::n(),
+      technical_valid_n = sum(!is.na(valid_cq)),
+      technical_not_determined_n = sum(is.na(valid_cq)),
+      technical_sd = dplyr::if_else(
+        technical_valid_n > 1L,
+        stats::sd(valid_cq, na.rm = TRUE),
+        NA_real_
+      ),
+      Cq = dplyr::if_else(
+        technical_valid_n > 0L,
+        mean(valid_cq, na.rm = TRUE),
+        NA_real_
+      ),
+      `Amp Status` = dplyr::if_else(
+        technical_valid_n > 0L,
+        "Amp",
+        "No Amp"
+      ),
+      .groups = "drop"
+    )
+
+  high_sd <- collapsed_data |>
+    dplyr::filter(
+      !is.na(technical_sd),
+      technical_sd > technical_sd_threshold
+    )
+  if (nrow(high_sd) > 0L) {
+    affected_pairs <- paste0(
+      high_sd$Sample,
+      " / ",
+      high_sd$Target,
+      " (SD = ",
+      format(round(high_sd$technical_sd, 3), nsmall = 3),
+      ")"
+    )
+    cli::cli_warn(
+      c(
+        "Technical-replicate SD exceeded {technical_sd_threshold} Cq.",
+        "!" = "{affected_pairs}"
+      )
+    )
+  }
+
+  collapsed_data
+}
+
 #' Build expression table
 #'
 #' @keywords internal

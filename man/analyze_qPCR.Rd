@@ -7,35 +7,40 @@
 analyze_qPCR(
   path_to_qPCR_res,
   path_to_group_label,
-  out_dir_path,
   controls = c("18S", "GAPDH", "RPL13A"),
-  plot_all = TRUE,
-  plot_internal_controls = FALSE,
-  plot_individual = FALSE,
-  save_final_table = TRUE,
-  file_prefix = "",
-  dpi = 150
+  technical_replicates = c("average", "error"),
+  technical_sd_threshold = 0.2,
+  out_dir_path = NULL,
+  save_results = FALSE
 )
 }
 \arguments{
-\item{path_to_qPCR_res}{path to a csv file produced by QuantStudio.}
+\item{path_to_qPCR_res}{Path to a QuantStudio CSV file. Required columns are
+\code{Sample}, \code{Target}, \code{Cq}, and \verb{Amp Status}.}
 
-\item{path_to_group_label}{path to a csv file including meta data.}
+\item{path_to_group_label}{Path to a sample metadata CSV file. Required
+columns are \code{Sample}, \code{Group}, and \code{Group_order}. An optional
+\code{color_scheme} column controls grouped plot colors.}
 
-\item{out_dir_path}{path to an output directory.}
+\item{controls}{Character vector of reference-gene names.}
 
-\item{controls}{list of internal controls.
-c("18S", "GAPDH", "RPL13A") (default)}
+\item{technical_replicates}{How repeated \code{Sample}-\code{Target} combinations are
+handled: \code{"average"} averages valid Cq values, while \code{"error"} rejects
+repeated combinations.}
 
-\item{plot_all, plot_internal_controls, plot_individual, save_final_table}{A boolean.}
+\item{technical_sd_threshold}{Non-negative Cq SD threshold used to warn
+about variable technical replicates.}
 
-\item{file_prefix}{prefix for files.}
+\item{out_dir_path}{Output directory used when \code{save_results = TRUE}.}
 
-\item{dpi}{dpi for graphs.}
+\item{save_results}{Logical; save the analyzed table as
+\code{analyzed_qPCR_res.tsv}.}
+}
+\value{
+A \code{qpcr_analysis} object.
 }
 \description{
-\code{analyze_qPCR()} analyzes a csv file produced by QuantStudio based on
-the ddCT method. This function implements the method described in
-this reference.
-Reference https://www.cell.com/trends/biotechnology/fulltext/S0167-7799(18)30342-1
+Reads QuantStudio results and sample metadata, then calculates relative
+expression using a delta-Cq workflow and geometric-mean normalization
+across the specified reference genes.
 }

@@ -10,6 +10,9 @@ build_gene_plot <- function(
   colors,
   show_n = TRUE,
   show_controls = TRUE,
+  jitter = TRUE,
+  jitter_width = 0.1,
+  jitter_seed = 1L,
   hide_ns = TRUE,
   stats_display = c("star", "value"),
   ylim_fold = 1.1,
@@ -43,6 +46,15 @@ build_gene_plot <- function(
     df$norm_exp,
     na.rm = TRUE
   )
+  point_position <- if (jitter) {
+    ggplot2::position_jitter(
+      width = jitter_width,
+      height = 0,
+      seed = jitter_seed
+    )
+  } else {
+    ggplot2::position_identity()
+  }
 
   p <- ggplot2::ggplot() +
     ggplot2::geom_col(
@@ -65,14 +77,13 @@ build_gene_plot <- function(
       ),
       width = 0.2
     ) +
-    ggplot2::geom_jitter(
+    ggplot2::geom_point(
       data = df,
       ggplot2::aes(
         x = Group,
         y = norm_exp
       ),
-      width = 0.1,
-      height = 0,
+      position = point_position,
       size = 2,
       alpha = 0.8
     ) +
@@ -187,10 +198,15 @@ build_gene_plot <- function(
 build_overview_plot <- function(
   object,
   colors,
-  show_controls = TRUE
+  show_controls = TRUE,
+  include_internal_controls = FALSE
 
 ) {
-  summary_df <- object$data %>%
+  summary_df <- object$data |>
+    dplyr::filter(
+      include_internal_controls |
+        !Target %in% object$controls
+    ) |>
     dplyr::mutate(
       Group = factor(
         Group,

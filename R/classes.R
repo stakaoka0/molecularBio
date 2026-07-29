@@ -2,6 +2,10 @@
 
 #' Print qpcr analysis
 #'
+#' @param x A `qpcr_analysis` object.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return `x`, invisibly.
 #' @export
 
 print.qpcr_analysis <- function(
@@ -39,6 +43,10 @@ print.qpcr_analysis <- function(
 
 #' Summary qpcr analysis
 #'
+#' @param object A `qpcr_analysis` object.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A one-row tibble summarizing the analysis.
 #' @export
 
 summary.qpcr_analysis <- function(
@@ -71,6 +79,10 @@ summary.qpcr_analysis <- function(
 
 #' Plot method
 #'
+#' @param x A `qpcr_analysis` object.
+#' @param ... Arguments passed to [plot_qPCR()].
+#'
+#' @return Invisibly, the plots returned by [plot_qPCR()].
 #' @export
 
 plot.qpcr_analysis <- function(
@@ -86,6 +98,10 @@ plot.qpcr_analysis <- function(
 
 #' Print statistical results
 #'
+#' @param x A `qpcr_stats` object.
+#' @param ... Additional arguments passed to the next print method.
+#'
+#' @return `x`, invisibly.
 #' @export
 
 print.qpcr_stats <- function(
