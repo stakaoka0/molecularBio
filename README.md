@@ -29,16 +29,6 @@ install.packages("remotes")
 remotes::install_github("stakaoka0/molecularBio")
 ```
 
-For a private repository, GitHub authentication must be configured
-before installation. A Personal Access Token can be supplied through the
-`GITHUB_PAT` environment variable or a Git credential manager.
-
-During development, load the local checkout without installing it:
-
-``` r
-devtools::load_all()
-```
-
 ## Input files
 
 ### QuantStudio results

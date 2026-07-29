@@ -623,13 +623,6 @@ workflows are not part of the current <code>main</code> branch.</p>
 <p>Install the package from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;remotes&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;stakaoka0/molecularBio&quot;</span>)</span></code></pre></div>
-<p>For a private repository, GitHub authentication must be configured
-before installation. A Personal Access Token can be supplied through the
-<code>GITHUB_PAT</code> environment variable or a Git credential
-manager.</p>
-<p>During development, load the local checkout without installing
-it:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">load_all</span>()</span></code></pre></div>
 <h2 id="input-files">Input files</h2>
 <h3 id="quantstudio-results">QuantStudio results</h3>
 <p>The qPCR CSV file must contain:</p>
@@ -699,37 +692,37 @@ is used.</p>
 <h2 id="complete-workflow">Complete workflow</h2>
 <p><code>qPCR()</code> runs analysis, optional statistics, and plotting
 in one call:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(molecularBio)</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">qPCR</span>(</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">controls =</span> <span class="fu">c</span>(<span class="st">&quot;18S&quot;</span>, <span class="st">&quot;GAPDH&quot;</span>, <span class="st">&quot;RPL13A&quot;</span>),</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">technical_replicates =</span> <span class="st">&quot;average&quot;</span>,</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">technical_sd_threshold =</span> <span class="fl">0.2</span>,</span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;anova&quot;</span>,</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  <span class="at">plot_all =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(molecularBio)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">qPCR</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">controls =</span> <span class="fu">c</span>(<span class="st">&quot;18S&quot;</span>, <span class="st">&quot;GAPDH&quot;</span>, <span class="st">&quot;RPL13A&quot;</span>),</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">technical_replicates =</span> <span class="st">&quot;average&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">technical_sd_threshold =</span> <span class="fl">0.2</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;anova&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">plot_all =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>)</span></code></pre></div>
 <p>Set <code>stats_type</code> to <code>&quot;none&quot;</code>,
 <code>&quot;ttest&quot;</code>, or <code>&quot;anova&quot;</code>. ANOVA is followed by
 Tukey pairwise comparisons. Reference genes are excluded from
 statistical testing.</p>
 <p>The returned object contains the analyzed data and, when requested,
 the statistical results:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>result</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">summary</span>(result)</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>result<span class="sc">$</span>data</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>result<span class="sc">$</span>stats</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>result</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">summary</span>(result)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>result<span class="sc">$</span>data</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>result<span class="sc">$</span>stats</span></code></pre></div>
 <h2 id="step-by-step-workflow">Step-by-step workflow</h2>
 <p>The same workflow can be run in separate stages.</p>
 <h3 id="analyze-expression">Analyze expression</h3>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">controls =</span> <span class="fu">c</span>(<span class="st">&quot;18S&quot;</span>, <span class="st">&quot;GAPDH&quot;</span>, <span class="st">&quot;RPL13A&quot;</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">controls =</span> <span class="fu">c</span>(<span class="st">&quot;18S&quot;</span>, <span class="st">&quot;GAPDH&quot;</span>, <span class="st">&quot;RPL13A&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>)</span></code></pre></div>
 <p>For each target, the analysis:</p>
 <ol style="list-style-type: decimal">
 <li>calculates the mean Cq in the reference group;</li>
@@ -743,12 +736,12 @@ error limits.</li>
 <h3 id="technical-replicates">Technical replicates</h3>
 <p>By default, repeated <code>Sample</code>-<code>Target</code>
 combinations are treated as technical replicates:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">technical_replicates =</span> <span class="st">&quot;average&quot;</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">technical_sd_threshold =</span> <span class="fl">0.2</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">technical_replicates =</span> <span class="st">&quot;average&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">technical_sd_threshold =</span> <span class="fl">0.2</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span></code></pre></div>
 <p>Only Cq values with <code>Amp Status == &quot;Amp&quot;</code> contribute to
 the technical mean. The analyzed table retains:</p>
 <ul>
@@ -822,18 +815,18 @@ when the remaining experimental and preprocessing requirements have
 already been addressed and the assumption of approximately 100%
 amplification efficiency is appropriate.</p>
 <p>Save the analyzed table by supplying both arguments:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">save_results =</span> <span class="cn">TRUE</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>analysis <span class="ot">&lt;-</span> <span class="fu">analyze_qPCR</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">save_results =</span> <span class="cn">TRUE</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>)</span></code></pre></div>
 <h3 id="run-statistics">Run statistics</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>statistical_result <span class="ot">&lt;-</span> <span class="fu">stats_qPCR</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  analysis,</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;ttest&quot;</span>,</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">stats_value =</span> <span class="st">&quot;log2_norm_exp&quot;</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>statistical_result <span class="ot">&lt;-</span> <span class="fu">stats_qPCR</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  analysis,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;ttest&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">stats_value =</span> <span class="st">&quot;log2_norm_exp&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>)</span></code></pre></div>
 <p>Available expression columns are <code>&quot;log2_norm_exp&quot;</code> and
 <code>&quot;norm_exp&quot;</code>. <code>&quot;log2_norm_exp&quot;</code> is the default and
 is strongly recommended for the package’s parametric t-tests and ANOVA.
@@ -852,11 +845,11 @@ warning.</p>
 <h3 id="select-plot-comparisons">Select plot comparisons</h3>
 <p>The <code>comparison</code> argument controls which calculated
 comparisons are displayed:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  statistical_result,</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">comparison =</span> <span class="st">&quot;control&quot;</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  statistical_result,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">comparison =</span> <span class="st">&quot;control&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>)</span></code></pre></div>
 <p>Available modes are:</p>
 <ul>
 <li><code>&quot;all&quot;</code>: display every calculated comparison;</li>
@@ -868,31 +861,31 @@ significance threshold;</li>
 <code>stats_group</code>.</li>
 </ul>
 <p>Each custom entry must contain exactly two group names:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  statistical_result,</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">comparison =</span> <span class="st">&quot;custom&quot;</span>,</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">stats_group =</span> <span class="fu">list</span>(</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Treatment_A&quot;</span>),</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;Treatment_A&quot;</span>, <span class="st">&quot;Treatment_B&quot;</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  )</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  statistical_result,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">comparison =</span> <span class="st">&quot;custom&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">stats_group =</span> <span class="fu">list</span>(</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;Control&quot;</span>, <span class="st">&quot;Treatment_A&quot;</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;Treatment_A&quot;</span>, <span class="st">&quot;Treatment_B&quot;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  )</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>)</span></code></pre></div>
 <p>Group names must exactly match the <code>Group</code> column.</p>
 <h2 id="plot-customization">Plot customization</h2>
 <h3 id="named-colors">Named colors</h3>
 <p>Named color vectors are matched by group name, so their order does
 not matter:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>group_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">Treatment_B =</span> <span class="st">&quot;#4DBBD5&quot;</span>,</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">Control =</span> <span class="st">&quot;#FFFFFF&quot;</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">Treatment_A =</span> <span class="st">&quot;#E64B35&quot;</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>)</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  analysis,</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">palette =</span> group_colors,</span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>group_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="at">Treatment_B =</span> <span class="st">&quot;#4DBBD5&quot;</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">Control =</span> <span class="st">&quot;#FFFFFF&quot;</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">Treatment_A =</span> <span class="st">&quot;#E64B35&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  analysis,</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>  <span class="at">palette =</span> group_colors,</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>)</span></code></pre></div>
 <p>Unnamed color vectors are assigned positionally according to
 <code>Group_order</code>. Built-in palette names include
 <code>&quot;grouped&quot;</code>, <code>&quot;viridis&quot;</code>, <code>&quot;npg&quot;</code>,
@@ -903,19 +896,19 @@ palettes.</p>
 <p>Individual plots jitter sample points horizontally by default. The
 default seed is <code>1</code>, so repeated plotting produces the same
 point positions:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  analysis,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">jitter =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">jitter_width =</span> <span class="fl">0.1</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">jitter_seed =</span> <span class="dv">1</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>)</span></code></pre></div>
+<p>Disable jitter to center the points over each group:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  analysis,</span>
 <span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">jitter =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">jitter_width =</span> <span class="fl">0.1</span>,</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  <span class="at">jitter_seed =</span> <span class="dv">1</span></span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>)</span></code></pre></div>
-<p>Disable jitter to center the points over each group:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">plot_qPCR</span>(</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  analysis,</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">plot_individual =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">jitter =</span> <span class="cn">FALSE</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">jitter =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>)</span></code></pre></div>
 <h2 id="saving-results">Saving results</h2>
 <p>The complete workflow can save:</p>
 <ul>
@@ -926,15 +919,15 @@ point positions:</p>
 <code>plot_individual = TRUE</code>.</li>
 </ul>
 <p>Control the output stages independently:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">qPCR</span>(</span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;ttest&quot;</span>,</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  <span class="at">save_analysis =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="at">save_stats =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  <span class="at">save_plots =</span> <span class="cn">TRUE</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">qPCR</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">path_to_qPCR_res =</span> <span class="st">&quot;data/quantstudio_results.csv&quot;</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">path_to_group_label =</span> <span class="st">&quot;data/sample_metadata.csv&quot;</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">out_dir_path =</span> <span class="st">&quot;results&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">stats_type =</span> <span class="st">&quot;ttest&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">save_analysis =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">save_stats =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="at">save_plots =</span> <span class="cn">TRUE</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>)</span></code></pre></div>
 <p>When calling <code>plot_qPCR()</code> directly, plots are returned
 without being saved by default. Use <code>save_tiff = TRUE</code> and/or
 <code>save_svg = TRUE</code> together with <code>out_dir_path</code> to
