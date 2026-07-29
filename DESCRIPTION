@@ -17,4 +17,5 @@ Imports:
   readr,
   dplyr,
   ggplot2,
-  ggtext
+  ggtext,
+  khroma
